@@ -1,6 +1,7 @@
 create api folder
-create empty node js folder npm init
-add/create index.js
+create empty node js folder using npm init
+add/create index.js 
+and add "dev": "nodemon index.js" under scripts in package.json file
 npm i nodemon
 npm i express
 npx prisma
@@ -24,7 +25,7 @@ after adding models/tables then migrate using command:
 
 npm install cors
 
-and copy paste cors from https://www.npmjs.com/package/cors
+and copy paste cors from https://www.npmjs.com/package/cors into api/index.js
 
 
 var express = require('express')
@@ -41,3 +42,33 @@ var corsOptions = {
     }
   }
 }
+app.use(cors(corsOptions))
+app.use(express.json())
+
+
+================X==================
+Creating user:-username,password
+	1.check username is already existed or 
+	2.if not then create if existed prevent user.
+for that make sure to create routes for backend api
+	routes\auth
+		|---index.js
+			inthis file we need to configures the routes for the backend
+
+create middlewares
+	api\middlewares\auth
+			|----checkusername.js(develop the func for checking the existing username existed or not)
+
+configure the entry point for middleware in entry point file:-index.js belows
+		
+		const auth=require("./routes/auth")
+		//make use of the auth
+		app.use("/auth",auth)
+		app.get("*",async (req,res)=>{
+			try {
+    				res.status(404).send({ msg: "Page not Found" });
+  			} catch (error) {}
+			
+		})
+
+
