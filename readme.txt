@@ -53,11 +53,69 @@ Creating user:-username,password
 for that make sure to create routes for backend api
 	routes\auth
 		|---index.js
-			inthis file we need to configures the routes for the backend
-
+			in this file we need to configures the routes for the backend
+			
+			const express = require("express");
+			//import modules like this
+			const preventuser = require("../../middlewares/auth/preventuser");
+			const signupvalidation = require("../../vaidators/auth/signup");
+			const router = express.Router();
+			router.post("/signup",signupvalidation,preventuser,hashpassword,createUser, (req, res) => {
+  			try {
+   			 res.status(200).send({ msg: "Signup page" });
+  			    } catch (error) {}
+			});
+			//export module like this
+			module.exports = router;
 create middlewares
 	api\middlewares\auth
 			|----checkusername.js(develop the func for checking the existing username existed or not)
+						//initialize PrismaClient
+						const { PrismaClient } = require("@prisma/client");
+						const prisma = new PrismaClient();
+						const checkUser = (username) =>
+						new Promise(async (resolve, reject) => {
+							const result = await prisma.user.findFirst({
+							where: {
+								username: username,
+							},
+							});
+							if (result) {
+								resolve({ message: "user exists",password :result.password});
+							} else {
+								reject({ message: "user doesnt exists", title: "dublicate request" });
+							}
+						});
+
+
+						const checkuser = async (req, res, next) => {
+						try {
+							const { username } = req.body;
+							const result = await checkUser(username);
+							
+							req.hashpassword=result.password
+							next();
+						} catch (error) {
+							console.log(error)
+							res.status(400).send(error || { message: "unkown error" });
+						}
+						};
+
+						module.exports = checkuser
+			|--createuser.js(develop the func for creating username)
+					const { PrismaClient } = require("@prisma/client");
+					const prisma = new PrismaClient();
+					const createUser=async (req,res)=>{
+						try {
+						const {username,password}=req.body
+						const result=await prisma.user.create({username:username,password:password});
+						next();
+						} catch (error)
+							{
+								console.log(error)
+								res.status(404).send(error || {msg:"Unknown Error"})
+							}
+						}
 
 configure the entry point for middleware in entry point file:-index.js belows
 		
