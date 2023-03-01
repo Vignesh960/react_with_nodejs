@@ -11,7 +11,7 @@ npx prisma init --datasource-provider mysql
 then change .env configurations===>DATABASE_URL="mysql://root:root@localhost:3306/blogs"
 
 https://www.prisma.io/docs/getting-started/quickstart
-	add model like this prisma\schema.prisma==>
+	add model or table like this prisma\schema.prisma==>
 			model user {
   				id String @id @default(cuid())
   				username String
@@ -78,7 +78,7 @@ create middlewares
 							const result = await prisma.user.findFirst({
 							where: {
 								username: username,
-							},
+								},
 							});
 							if (result) {
 								resolve({ message: "user exists",password :result.password});
@@ -87,38 +87,82 @@ create middlewares
 							}
 						});
 
-
+						//getting request from body
 						const checkuser = async (req, res, next) => {
-						try {
-							const { username } = req.body;
-							const result = await checkUser(username);
+							try {
+								const { username } = req.body;
+								const result = await checkUser(username);
 							
-							req.hashpassword=result.password
-							next();
-						} catch (error) {
-							console.log(error)
-							res.status(400).send(error || { message: "unkown error" });
-						}
+								req.hashpassword=result.password
+								next();
+							     }
+							catch (error) {
+								console.log(error)
+								res.status(400).send(error || { message: "unkown error" });
+									}
 						};
 
 						module.exports = checkuser
 			|--createuser.js(develop the func for creating username)
+
 					const { PrismaClient } = require("@prisma/client");
 					const prisma = new PrismaClient();
-					const createUser=async (req,res)=>{
+					const createUser=async (req,res,next)=>{
 						try {
-						const {username,password}=req.body
-						const result=await prisma.user.create({username:username,password:password});
+						const hashpassword=req.hashpassword;
+						const {username,password}=req.body;
+						const result=await prisma.user.create(
+							
+							{
+								data:{
+								username:username,
+								password:password
+								}
+						});
 						next();
 						} catch (error)
 							{
 								console.log(error)
 								res.status(404).send(error || {msg:"Unknown Error"})
 							}
-						}
+						};
+					module.exports = createUser;
+			|--hashpassword.js (develop fun for hashing the password before creating account)-npm i bcrypt
+				
+				const bcrypt = require("bcrypt");
 
-configure the entry point for middleware in entry point file:-index.js belows
-		
+				const hash_password = (password) =>new Promise(async (resolve, reject) => {
+    						const salt=bcrypt.genSaltSync(10)
+    						const hashpassword = await bcrypt.hashSync(password,salt);
+    						console.log(hashpassword)
+    						if (hashpassword) {
+      							resolve(hashpassword);
+    						}
+						else {
+      							reject({ msg: "Password hashing failed" });
+    						     }
+  						});
+
+				const hashpassword = async (req, res, next) => {
+ 					try {
+    						const { password } = req.body;
+    						const result = await hash_password(password);
+    						req.hashpassword=result
+    						next();
+  					}
+				 catch (error) 
+					{
+    					res.status(400).send(error || { message: "unkown error" });
+  						}
+					};
+
+				module.exports = hashpassword;
+
+					
+				
+
+configure the entry point for middleware in entry point file:-index.js belows;
+
 		const auth=require("./routes/auth")
 		//make use of the auth
 		app.use("/auth",auth)
@@ -130,3 +174,6 @@ configure the entry point for middleware in entry point file:-index.js belows
 		})
 
 
+add base url to frontend or UI or client app (app.tsx)
+import axios from "axios"
+axios.defaults.baseURL="http://localhost:3030"
